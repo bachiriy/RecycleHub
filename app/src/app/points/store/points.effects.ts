@@ -15,8 +15,12 @@ export class PointsEffects {
       withLatestFrom(this.store.select(selectCurrentUser)),
       mergeMap(([{ points }, user]) =>
         this.pointsService.redeemPoints(user!.id, points).pipe(
-          map(remainingPoints => PointsActions.redeemPointsSuccess({ points: remainingPoints })),
-          catchError(error => of(PointsActions.redeemPointsFailure({ error: error.message })))
+          map((remainingPoints) =>
+            PointsActions.redeemPointsSuccess({ points: remainingPoints })
+          ),
+          catchError((error) =>
+            of(PointsActions.redeemPointsFailure({ error: error.message }))
+          )
         )
       )
     )
@@ -27,4 +31,4 @@ export class PointsEffects {
     private store: Store,
     private pointsService: PointsService
   ) {}
-} 
+}

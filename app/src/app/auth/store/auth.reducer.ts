@@ -6,12 +6,14 @@ export interface AuthState {
   user: User | null;
   loading: boolean;
   error: string | null;
+  auth: boolean
 }
 
 export const initialState: AuthState = {
-  user: null,
+  user: JSON.parse(localStorage.getItem('currentUser') || 'null'),
   loading: false,
-  error: null
+  error: null,
+  auth: !!localStorage.getItem('currentUser')
 };
 
 export const authReducer = createReducer(
@@ -21,12 +23,16 @@ export const authReducer = createReducer(
     loading: true,
     error: null
   })),
-  on(AuthActions.loginSuccess, (state, { user }) => ({
-    ...state,
-    user,
-    loading: false,
-    error: null
-  })),
+  on(AuthActions.loginSuccess, (state, { user }) => {
+    localStorage.setItem('currentUser', JSON.stringify(user));
+    return {
+      ...state,
+      user,
+      loading: false,
+      error: null,
+      auth: true
+    };
+  }),
   on(AuthActions.loginFailure, (state, { error }) => ({
     ...state,
     loading: false,
@@ -39,23 +45,29 @@ export const authReducer = createReducer(
   })),
   on(AuthActions.registerSuccess, (state, { user }) => ({
     ...state,
-    user,
+    user: null,
     loading: false,
-    error: null
+    error: null,
+    auth: false
   })),
   on(AuthActions.registerFailure, (state, { error }) => ({
     ...state,
     loading: false,
     error
   })),
-  on(AuthActions.logout, () => initialState),
+  on(AuthActions.logout, (state) => {
+    localStorage.removeItem('currentUser');
+    return initialState;
+  }),
   on(AuthActions.updateProfileSuccess, (state, { user }) => ({
     ...state,
-    user
+    user,
+    auth: false
   })),
   on(AuthActions.deleteAccountSuccess, () => initialState),
   on(AuthActions.deleteAccountFailure, (state, { error }) => ({
     ...state,
-    error
+    error,
+    auth: false
   }))
 ); 

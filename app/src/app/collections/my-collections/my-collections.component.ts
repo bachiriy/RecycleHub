@@ -1,13 +1,17 @@
 import { Component, OnInit } from '@angular/core';
 import { Store } from '@ngrx/store';
 import { Observable } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
+import { BaseComponent } from '../../shared/components/base.component';
 import { CollectionRequest } from '../../models/collection-request.model';
 import { User } from '../../models/user.model';
 import { selectCurrentUser } from '../../auth/store/auth.selectors';
 import * as CollectionActions from '../store/collection.actions';
+import { selectPendingRequestsCount, selectUserCollections } from '../store/collection.selectors';
 
 @Component({
   selector: 'app-my-collections',
+  standalone: false,
   template: `
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div class="flex justify-between items-center mb-6">
@@ -15,7 +19,7 @@ import * as CollectionActions from '../store/collection.actions';
         <button 
           routerLink="/collections/new"
           class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700"
-          [disabled]="(pendingRequestsCount$ | async) >= 3"
+          [disabled]="((pendingRequestsCount$ | async) ?? 0) >= 3"
         >
           New Collection Request
         </button>
@@ -78,12 +82,13 @@ import * as CollectionActions from '../store/collection.actions';
     </div>
   `
 })
-export class MyCollectionsComponent implements OnInit {
+export class MyCollectionsComponent extends BaseComponent implements OnInit {
   myCollections$: Observable<CollectionRequest[]>;
   pendingRequestsCount$: Observable<number>;
   currentUser$: Observable<User | null>;
 
   constructor(private store: Store) {
+    super();
     this.currentUser$ = this.store.select(selectCurrentUser);
     this.myCollections$ = this.store.select(selectUserCollections);
     this.pendingRequestsCount$ = this.store.select(selectPendingRequestsCount);

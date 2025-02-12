@@ -8,7 +8,7 @@ export interface User {
   city: string;
   phone: string;
   birthDate: Date;
-  profileImage?: string;
   role: 'COLLECTOR' | 'PARTICULAR';
-  points?: number;
+  points: number;
+  profileImage?: string;
 } 

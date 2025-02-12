@@ -1,5 +1,5 @@
 import { NgModule } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { AsyncPipe, CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { StoreModule } from '@ngrx/store';
 import { EffectsModule } from '@ngrx/effects';
@@ -18,6 +18,7 @@ import { NewCollectionComponent } from './new-collection/new-collection.componen
   ],
   imports: [
     CommonModule,
+    AsyncPipe,
     RouterModule,
     ReactiveFormsModule,
     StoreModule.forFeature('collections', collectionReducer),

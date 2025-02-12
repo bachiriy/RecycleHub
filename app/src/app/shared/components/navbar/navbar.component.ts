@@ -5,9 +5,11 @@ import { Observable } from 'rxjs';
 import { User } from '../../../models/user.model';
 import { selectCurrentUser } from '../../../auth/store/auth.selectors';
 import * as AuthActions from '../../../auth/store/auth.actions';
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-navbar',
+  standalone: false,
   template: `
     <nav class="bg-green-600 text-white">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

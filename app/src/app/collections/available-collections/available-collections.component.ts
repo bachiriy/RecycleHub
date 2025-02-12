@@ -1,13 +1,17 @@
 import { Component, OnInit } from '@angular/core';
 import { Store } from '@ngrx/store';
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
+import { takeUntil, filter, take } from 'rxjs/operators';
+import { BaseComponent } from '../../shared/components/base.component';
 import { CollectionRequest } from '../../models/collection-request.model';
 import { User } from '../../models/user.model';
 import { selectCurrentUser } from '../../auth/store/auth.selectors';
 import * as CollectionActions from '../store/collection.actions';
+import { selectAvailableCollections } from '../store/collection.selectors';
 
 @Component({
   selector: 'app-available-collections',
+  standalone: false,
   template: `
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div class="flex justify-between items-center mb-6">
@@ -72,31 +76,45 @@ import * as CollectionActions from '../store/collection.actions';
     </div>
   `
 })
-export class AvailableCollectionsComponent implements OnInit {
+export class AvailableCollectionsComponent extends BaseComponent implements OnInit {
   availableCollections$: Observable<CollectionRequest[]>;
   currentUser$: Observable<User | null>;
+  collectionsLoaded$: Observable<boolean>;
 
   constructor(private store: Store) {
+    super();
     this.currentUser$ = this.store.select(selectCurrentUser);
     this.availableCollections$ = this.store.select(selectAvailableCollections);
+    // this.collectionsLoaded$ = this.store.select(selectCollections); // Add this
+    this.collectionsLoaded$ = of(true); // Add this
   }
 
   ngOnInit(): void {
-    this.currentUser$.subscribe(user => {
-      if (user) {
-        this.store.dispatch(CollectionActions.loadAvailableCollections({ city: user.city }));
-      }
+    this.currentUser$.pipe(
+      filter(user => !!user),
+      take(1),
+      takeUntil(this.destroy$)
+    ).subscribe(user => {
+      this.collectionsLoaded$.pipe(
+        take(1)
+      ).subscribe(loaded => {
+        if (!loaded) {
+          this.store.dispatch(CollectionActions.loadAvailableCollections({ city: user!.city }));
+        }
+      });
     });
   }
 
   acceptCollection(id: string): void {
-    this.currentUser$.subscribe(user => {
-      if (user) {
-        this.store.dispatch(CollectionActions.acceptCollection({ 
-          collectionId: id, 
-          collectorId: user.id 
-        }));
-      }
+    this.currentUser$.pipe(
+      filter(user => !!user),
+      take(1),
+      takeUntil(this.destroy$)
+    ).subscribe(user => {
+      this.store.dispatch(CollectionActions.acceptCollection({ 
+        collectionId: id, 
+        collectorId: user!.id 
+      }));
     });
   }
-} 
+}

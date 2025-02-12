@@ -1,13 +1,14 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Store } from '@ngrx/store';
-import { Observable } from 'rxjs';
+import { Observable, take } from 'rxjs';
 import { User } from '../../../models/user.model';
 import { selectCurrentUser } from '../../store/auth.selectors';
 import * as AuthActions from '../../store/auth.actions';
 
 @Component({
   selector: 'app-profile',
+  standalone: false,
   template: `
     <div class="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
       <div class="bg-white shadow rounded-lg" *ngIf="user$ | async as user">
@@ -16,7 +17,7 @@ import * as AuthActions from '../../store/auth.actions';
           <div class="flex items-center space-x-4">
             <div class="relative">
               <img 
-                [src]="user.profileImage || 'assets/default-avatar.png'" 
+                [src]="profileForm.get('profileImage')?.value || user.profileImage || 'assets/default-avatar.png'" 
                 class="h-20 w-20 rounded-full object-cover"
                 alt="Profile"
               />
@@ -241,7 +242,6 @@ export class ProfileComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    // Initialize form with current user data
     this.user$.subscribe(user => {
       if (user) {
         this.profileForm.patchValue({
@@ -261,17 +261,35 @@ export class ProfileComponent implements OnInit {
   onFileSelected(event: any): void {
     const file = event.target.files[0];
     if (file) {
-      // Store the file path for local storage
-      this.profileForm.patchValue({
-        profileImage: file.path
-      });
-      this.profileForm.markAsDirty();
+      if (file.size > 2 * 1024 * 1024) {
+        this.store.dispatch(AuthActions.updateProfileFailure({ error: 'Image size should be less than 2MB' }));
+        return;
+      }
+
+      if (!file.type.match(/image\/(png|jpeg|jpg|gif)/)) {
+        this.store.dispatch(AuthActions.updateProfileFailure({ error: 'Only image files are allowed' }));
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64String = reader.result as string;
+        this.profileForm.patchValue({
+          profileImage: base64String
+        });
+        this.profileForm.markAsDirty();
+      };
+      reader.readAsDataURL(file);
     }
   }
 
   onSubmit(): void {
     if (this.profileForm.valid && this.profileForm.dirty) {
-      this.user$.subscribe(user => {
+      this.user$.pipe(
+        take(1) // Ensure only one value is taken from the observable
+      ).subscribe(user => {
+        console.log('after sub');
+        
         if (user) {
           const updatedUser: User = {
             ...user,

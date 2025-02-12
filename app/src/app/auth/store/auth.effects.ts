@@ -40,6 +40,59 @@ export class AuthEffects {
     { dispatch: false }
   );
 
+
+  login$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(AuthActions.login),
+      mergeMap(({ email, password }) =>
+        this.authService.login(email, password).pipe(
+          map((u) => u !== null ? AuthActions.loginSuccess({user: u}) : AuthActions.loginFailure({error: 'login failer.'})),
+          catchError(error => of(AuthActions.loginFailure({ error: error.message })))
+        )
+      )
+    )
+  );
+
+  register$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(AuthActions.register),
+      mergeMap(({ user }) =>
+        this.authService.checkUserExists(user.email).pipe(
+          mergeMap(exists => {
+            if (exists) {
+              return of(AuthActions.registerFailure({ error: 'User with this email already exists' }));
+            }
+            return this.authService.register(user).pipe(
+              map((u) => u !== null ? AuthActions.registerSuccess({user: u}) : AuthActions.registerFailure({error: 'Registration failed'})),
+              catchError(error => of(AuthActions.registerFailure({ error: error.message })))
+            );
+          })
+        )
+      )
+    )
+  );
+
+  registerSuccess$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(AuthActions.registerSuccess),
+      tap(() => {
+        this.router.navigate(['/auth/login']);
+      })
+    ),
+    { dispatch: false }
+  );
+
+  logout$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(AuthActions.logout),
+      tap(() => {
+        this.authService.logout();
+        return this.router.navigate(['/auth/login'])
+      })
+    ),
+    { dispatch: false }
+  );
+
   constructor(
     private actions$: Actions,
     private authService: AuthService,

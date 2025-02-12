@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { Store } from '@ngrx/store';
 import { of } from 'rxjs';
-import { map, mergeMap, catchError, withLatestFrom, tap } from 'rxjs/operators';
+import { map, mergeMap, catchError, withLatestFrom, tap, filter } from 'rxjs/operators';
 import { CollectionService } from '../services/collection.service';
 import * as CollectionActions from './collection.actions';
 import { selectCurrentUser } from '../../auth/store/auth.selectors';
@@ -14,6 +14,7 @@ export class CollectionEffects {
     this.actions$.pipe(
       ofType(CollectionActions.loadUserCollections),
       withLatestFrom(this.store.select(selectCurrentUser)),
+      filter(([_, user]) => !!user),
       mergeMap(([_, user]) =>
         this.collectionService.getUserCollections(user!.id).pipe(
           map(collections => CollectionActions.loadUserCollectionsSuccess({ collections })),

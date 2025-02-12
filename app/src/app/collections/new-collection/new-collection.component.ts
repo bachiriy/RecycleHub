@@ -1,11 +1,14 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
 import { Store } from '@ngrx/store';
 import { Router } from '@angular/router';
+import { BaseComponent } from '../../shared/components/base.component';
+import { debounceTime, distinctUntilChanged, takeUntil } from 'rxjs/operators';
 import * as CollectionActions from '../store/collection.actions';
 
 @Component({
   selector: 'app-new-collection',
+  standalone: false,
   template: `
     <div class="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
       <div class="bg-white shadow rounded-lg p-6">
@@ -135,17 +138,13 @@ import * as CollectionActions from '../store/collection.actions';
     </div>
   `
 })
-export class NewCollectionComponent {
-  collectionForm: FormGroup;
+export class NewCollectionComponent extends BaseComponent implements OnInit {
+  collectionForm!: FormGroup;
   minDate = new Date().toISOString().split('T')[0];
+  totalWeight: number = 0;
   
   get wasteItems() {
     return this.collectionForm.get('wasteItems') as FormArray;
-  }
-
-  get totalWeight(): number {
-    return this.wasteItems.controls.reduce((total, control) => 
-      total + (control.get('weight')?.value || 0), 0);
   }
 
   constructor(
@@ -153,6 +152,11 @@ export class NewCollectionComponent {
     private store: Store,
     private router: Router
   ) {
+    super();
+    this.initForm();
+  }
+
+  private initForm(): void {
     this.collectionForm = this.fb.group({
       wasteItems: this.fb.array([]),
       collectionDate: ['', Validators.required],
@@ -165,32 +169,76 @@ export class NewCollectionComponent {
     this.addWasteItem(); // Add first waste item by default
   }
 
+  ngOnInit(): void {
+    // Monitor waste items changes with debounce
+    this.wasteItems.valueChanges.pipe(
+      debounceTime(300),
+      distinctUntilChanged(),
+      takeUntil(this.destroy$)
+    ).subscribe(() => {
+      this.calculateTotalWeight();
+    });
+  }
+
+  private calculateTotalWeight(): void {
+    this.totalWeight = this.wasteItems.controls.reduce((total, control) => 
+      total + (control.get('weight')?.value || 0), 0);
+  }
+
   addWasteItem(): void {
+    if (this.wasteItems.length >= 5) return;
+
     const wasteItem = this.fb.group({
       type: ['PLASTIC', Validators.required],
-      weight: [0, [Validators.required, Validators.min(1000)]]
+      weight: [0, [Validators.required, Validators.min(0), Validators.max(10000)]]
     });
 
     this.wasteItems.push(wasteItem);
   }
 
   removeWasteItem(index: number): void {
-    this.wasteItems.removeAt(index);
+    if (this.wasteItems.length > 1) {
+      this.wasteItems.removeAt(index);
+    }
   }
 
   onImagesSelected(event: any): void {
     const files = event.target.files;
     if (files) {
-      const imagePaths = Array.from(files).map((file: any) => file.path);
-      this.collectionForm.patchValue({ images: imagePaths });
+      const reader = new FileReader();
+      const imagePaths: string[] = [];
+
+      // Limit number of images
+      const maxImages = Math.min(files.length, 3);
+      
+      for (let i = 0; i < maxImages; i++) {
+        reader.readAsDataURL(files[i]);
+        reader.onload = () => {
+          imagePaths.push(reader.result as string);
+          if (imagePaths.length === maxImages) {
+            this.collectionForm.patchValue({ images: imagePaths });
+          }
+        };
+      }
     }
   }
 
   onSubmit(): void {
     if (this.collectionForm.valid && this.totalWeight <= 10000 && this.totalWeight >= 1000) {
+      const formValue = this.collectionForm.value;
+      
+      // Convert date string to Date object
+      formValue.collectionDate = new Date(formValue.collectionDate);
+      
       this.store.dispatch(CollectionActions.createCollection({ 
-        collection: this.collectionForm.value 
+        collection: formValue 
       }));
     }
+  }
+
+  override ngOnDestroy(): void {
+    super.ngOnDestroy();
+    // Clear form data
+    this.collectionForm.reset();
   }
 } 

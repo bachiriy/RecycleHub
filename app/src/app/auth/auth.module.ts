@@ -6,6 +6,8 @@ import { LoginComponent } from './components/login/login.component';
 import { RegisterComponent } from './components/register/register.component';
 import { ProfileComponent } from './components/profile/profile.component';
 import { authRoutes } from './auth.routes';
+import { StoreModule } from '@ngrx/store';
+import { authReducer } from './store/auth.reducer';
 
 @NgModule({
   declarations: [
@@ -16,7 +18,9 @@ import { authRoutes } from './auth.routes';
   imports: [
     CommonModule,
     ReactiveFormsModule,
-    RouterModule.forChild(authRoutes)
+    RouterModule.forChild(authRoutes),
+    StoreModule.forFeature('auth', authReducer)
+    // StoreModule.forFeature()
   ]
 })
 export class AuthModule { } 

@@ -3,16 +3,14 @@ import { RouterModule, Routes } from '@angular/router';
 import { AuthGuard } from './auth/guards/auth.guard';
 import { RoleGuard } from './auth/guards/role.guard';
 import { CollectionsResolver } from './collections/resolvers/collections.resolver';
+import { NewCollectionComponent } from './collections/new-collection/new-collection.component'; // Import components
+import { MyCollectionsComponent } from './collections/my-collections/my-collections.component';
+import { AvailableCollectionsComponent } from './collections/available-collections/available-collections.component';
 
 const routes: Routes = [
   {
     path: 'auth',
     loadChildren: () => import('./auth/auth.module').then(m => m.AuthModule)
-  },
-  {
-    path: 'dashboard',
-    canActivate: [AuthGuard],
-    loadChildren: () => import('./dashboard/dashboard.module').then(m => m.DashboardModule)
   },
   {
     path: 'collections',
@@ -25,26 +23,20 @@ const routes: Routes = [
         path: 'new',
         canActivate: [RoleGuard],
         data: { role: 'PARTICULAR' },
-        loadChildren: () => import('./collections/new-collection/new-collection.module').then(m => m.NewCollectionModule)
+        component: NewCollectionComponent
       },
       {
         path: 'my',
         canActivate: [RoleGuard],
         data: { role: 'PARTICULAR' },
-        loadChildren: () => import('./collections/my-collections/my-collections.module').then(m => m.MyCollectionsModule)
+        component: MyCollectionsComponent
       },
       {
         path: 'available',
         canActivate: [RoleGuard],
         data: { role: 'COLLECTOR' },
-        loadChildren: () => import('./collections/available-collections/available-collections.module').then(m => m.AvailableCollectionsModule)
+        component: AvailableCollectionsComponent
       },
-      {
-        path: 'assigned',
-        canActivate: [RoleGuard],
-        data: { role: 'COLLECTOR' },
-        loadChildren: () => import('./collections/assigned-collections/assigned-collections.module').then(m => m.AssignedCollectionsModule)
-      }
     ]
   },
   {
@@ -55,7 +47,7 @@ const routes: Routes = [
   },
   {
     path: '',
-    redirectTo: 'dashboard',
+    redirectTo: 'auth/profile',
     pathMatch: 'full'
   }
 ];
@@ -64,4 +56,4 @@ const routes: Routes = [
   imports: [RouterModule.forRoot(routes)],
   exports: [RouterModule]
 })
-export class AppRoutingModule { } 
+export class AppRoutingModule { }

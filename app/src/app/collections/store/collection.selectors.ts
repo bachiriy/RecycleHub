@@ -1,5 +1,6 @@
 import { createFeatureSelector, createSelector } from '@ngrx/store';
 import { CollectionState, collectionAdapter } from './collection.state';
+import { selectCurrentUser } from '../../auth/store/auth.selectors';
 
 export const selectCollectionState = createFeatureSelector<CollectionState>('collections');
 
@@ -13,12 +14,12 @@ export const selectAllCollections = createSelector(
 export const selectUserCollections = createSelector(
   selectAllCollections,
   selectCurrentUser,
-  (collections, user) => collections.filter(c => c.userId === user?.id)
+  (collections, user) => collections.filter(c => user && c.userId === user.id)
 );
 
 export const selectPendingRequestsCount = createSelector(
   selectCollectionState,
-  state => state.pendingRequestsCount
+  (state) => state.pendingRequestsCount
 );
 
 export const selectAvailableCollections = createSelector(
@@ -27,7 +28,7 @@ export const selectAvailableCollections = createSelector(
   (collections, user) => collections.filter(c => 
     c.status === 'PENDING' && 
     !c.collectorId && 
-    c.collectionAddress.includes(user?.city || '')
+    user && c.collectionAddress.includes(user.city || '')
   )
 );
 
@@ -40,3 +41,4 @@ export const selectCollectionError = createSelector(
   selectCollectionState,
   state => state.error
 ); 
+
